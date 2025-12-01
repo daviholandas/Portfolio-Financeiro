@@ -1,247 +1,347 @@
-# 🏦 Sistema de Portfólio de Investimentos
+# 🏦 Teste Prático: Sistema de Analytics de Portfólio
 
 ## 📋 Descrição do Desafio
 
-Você deve desenvolver uma **WebAPI em .NET 8** para um sistema de gerenciamento de portfólio de investimentos. Este teste avalia suas habilidades em:
+Desenvolva uma **WebAPI em .NET 8** com foco em **algoritmos financeiros**. Este teste avalia:
 
-- 🔧 **Conhecimentos Técnicos**: .NET 8, WebAPI
-- 🧠 **Raciocínio Lógico**: Algoritmos de cálculo financeiro e otimização
-- 🏗️ **Arquitetura**: Clean Code, SOLID, padrões de design
-- 🛡️ **Segurança**: Validações, tratamento de erros
+- 🧠 **Raciocínio Lógico**: Cálculos financeiros e otimização
+- 🔧 **Qualidade de Código**: Clean Code, SOLID, testabilidade
+- 📊 **Problem Solving**: Análise de dados complexos e edge cases
+
+⏱️ **Tempo estimado**: 3-4 horas
 
 ---
 
-## 🎯 Objetivos do Sistema
+## 🎯 Objetivo
 
-### Core Features (Obrigatórias)
-1. **Gestão de Ativos Financeiros**
-   - CRUD de ações, bonds, fundos
-   - Preços históricos e atuais
+Implementar **3 endpoints analíticos** que processam dados de um portfólio de investimentos pré-carregado.
 
-2. **Gestão de Portfólio**
-   - Adicionar/remover investimentos
-   - Calcular valor total e rentabilidade
-   - Rebalanceamento automático
+### Endpoints a Implementar
 
-3. **Relatórios Financeiros**
-   - Performance por período
-   - Análise de risco (volatilidade)
-   - Diversificação por setor
+#### Analytics Controller
 
-### Advanced Features (Diferencial)
-4. **Algoritmo de Otimização**
-   - Sugestão de rebalanceamento
-   - Cálculo de risco x retorno
+1. **`GET /api/portfolios/{id}/performance`**
+   - Retorna métricas de performance do portfólio
 
-5. **Sistema de Alertas**
-   - Notificações de performance
-   - Limites de risco
+2. **`GET /api/portfolios/{id}/risk-analysis`**
+   - Analisa risco e diversificação
+
+3. **`GET /api/portfolios/{id}/rebalancing`**
+   - Sugere ajustes para otimizar o portfólio
+
+---
+
+## 📊 Dados Fornecidos
+
+Você receberá um arquivo **`SeedData.json`** com:
+
+- **15 ativos** da bolsa brasileira (PETR4, VALE3, ITUB4, etc.)
+- **3 portfólios** com diferentes estratégias (Conservador, Crescimento, Dividendos)
+- **Histórico de preços** (30 dias) para 5 ativos principais
+- **Market data** (Taxa Selic, Ibovespa)
+
+### Estrutura Simplificada
+
+```
+Portfolio
+├── Id, Name, UserId
+├── TotalInvestment: valor total investido inicialmente
+└── Positions[]
+    ├── Symbol: código do ativo (ex: "PETR4")
+    ├── Quantity: quantidade de ações
+    ├── AveragePrice: preço médio de compra
+    └── TargetAllocation: % ideal deste ativo no portfólio
+
+Asset
+├── Symbol: "PETR4"
+├── Name, Type, Sector
+├── CurrentPrice: preço atual
+└── PriceHistory[]: histórico de 30 dias
+```
+
+---
+
+## 📋 Especificações dos Endpoints
+
+### 1. Performance Analysis
+**`GET /api/portfolios/{id}/performance`**
+
+Calcule e retorne:
+
+```json
+{
+  "totalInvestment": 100000.00,
+  "currentValue": 108500.50,
+  "totalReturn": 8.50,
+  "totalReturnAmount": 8500.50,
+  "annualizedReturn": 12.34,
+  "volatility": 15.67,
+  "positionsPerformance": [
+    {
+      "symbol": "PETR4",
+      "investedAmount": 10000.00,
+      "currentValue": 11200.00,
+      "return": 12.00,
+      "weight": 10.32
+    }
+  ]
+}
+```
+
+**Algoritmos Necessários:**
+- **Total Return**: `(ValorAtual - ValorInvestido) / ValorInvestido * 100`
+- **Annualized Return**: `((1 + TotalReturn)^(365/dias) - 1) * 100`
+- **Volatility**: Desvio padrão dos retornos diários usando PriceHistory
+
+**Edge Cases:**
+- Sem histórico de preços → volatility = null
+- Divisão por zero
+- Preço atual = 0
+
+---
+
+### 2. Risk Analysis
+**`GET /api/portfolios/{id}/risk-analysis`**
+
+Analise risco e diversificação:
+
+```json
+{
+  "overallRisk": "Medium",
+  "sharpeRatio": 1.25,
+  "concentrationRisk": {
+    "largestPosition": {
+      "symbol": "PETR4",
+      "percentage": 25.5
+    },
+    "top3Concentration": 60.2
+  },
+  "sectorDiversification": [
+    {
+      "sector": "Energy",
+      "percentage": 35.0,
+      "risk": "High"
+    }
+  ],
+  "recommendations": [
+    "Reduzir exposição ao setor Energy (35%)",
+    "Posição PETR4 representa 25.5% do portfólio (ideal < 20%)"
+  ]
+}
+```
+
+**Algoritmos Necessários:**
+- **Sharpe Ratio**: `(RetornoPortfolio - TaxaSelic) / Volatilidade`
+- **Concentration Risk**: 
+  - Maior posição individual
+  - Top 3 posições somadas
+- **Sector Diversification**: Agrupar por setor e calcular %
+
+**Regras de Risco:**
+- Alto: posição > 25% OU setor > 40%
+- Médio: posição 15-25% OU setor 25-40%
+- Baixo: posição < 15% E setor < 25%
+
+---
+
+### 3. Rebalancing Suggestions
+**`GET /api/portfolios/{id}/rebalancing`**
+
+Sugira transações para ajustar o portfólio:
+
+```json
+{
+  "needsRebalancing": true,
+  "currentAllocation": [
+    {
+      "symbol": "PETR4",
+      "currentWeight": 25.5,
+      "targetWeight": 20.0,
+      "deviation": 5.5
+    }
+  ],
+  "suggestedTrades": [
+    {
+      "symbol": "PETR4",
+      "action": "SELL",
+      "quantity": 50,
+      "estimatedValue": 1775.00,
+      "transactionCost": 5.33,
+      "reason": "Reduzir de 25.5% para 20.0%"
+    },
+    {
+      "symbol": "ITUB4",
+      "action": "BUY",
+      "quantity": 60,
+      "estimatedValue": 1740.00,
+      "transactionCost": 5.22,
+      "reason": "Aumentar de 8.5% para 12.0%"
+    }
+  ],
+  "totalTransactionCost": 10.55,
+  "expectedImprovement": "Redução de 15% no risco de concentração"
+}
+```
+
+**Algoritmos Necessários:**
+- Calcular peso atual: `ValorPosição / ValorTotal * 100`
+- Identificar desvios: `|PesoAtual - PesoAlvo| > 2%`
+- Calcular quantidade a transacionar para atingir target
+- Custo de transação: `0.3%` por operação
+- **Otimização**: Minimizar número de trades e custos
+
+**Regras:**
+- Só sugerir se desvio > 2%
+- Não sugerir trades < R$ 100,00
+- Priorizar maiores desvios
+- Considerar custos vs benefícios
 
 ---
 
 ## 🏗️ Estrutura Técnica Esperada
 
-### 1. Arquitetura em Camadas
+### Arquitetura Mínima
+
 ```
-├── Controllers/          # API Controllers
-├── Services/            # Lógica de negócio
-├── Repositories/        # Acesso a dados
-├── Models/             # Entidades e DTOs
-├── Infrastructure/     # Configurações, DbContext
-└── Tests/             # Testes unitários
+├── Controllers/
+│   └── AnalyticsController.cs      # 3 endpoints
+├── Services/
+│   ├── PerformanceCalculator.cs    # Algoritmos de performance
+│   ├── RiskAnalyzer.cs             # Análise de risco
+│   └── RebalancingOptimizer.cs     # Otimização de rebalanceamento
+├── Models/
+│   ├── Portfolio.cs, Asset.cs      # Entidades
+│   └── DTOs/                       # Response models
+├── Data/
+│   ├── DataContext.cs              # InMemory DB
+│   └── SeedData.json               # Dados fornecidos
+└── Tests/
+    └── ServicesTests/              # Testes unitários
 ```
 
-### 2. Entidades e Relacionamentos
+### O Que NÃO Precisa Implementar
 
-Você deve modelar as entidades necessárias para representar:
-- **Ativos financeiros** com informações como símbolo (PETR4), nome, tipo, setor e preço
-- **Portfólios** pertencentes a usuários específicos
-- **Posições** que representam a quantidade de cada ativo no portfólio
-- **Histórico de preços** para cálculos de performance
-- **Transações** de compra/venda para rastreabilidade
-
-*Dica: Pense nos relacionamentos entre as entidades e como isso impacta os cálculos financeiros.*
-
-### 3. Endpoints Esperados
-
-#### Assets Controller
-- `GET /api/assets` - Listar todos os ativos
-- `GET /api/assets/{id}` - Obter ativo específico
-- `GET /api/assets/search?symbol={symbol}` - Buscar por símbolo
-- `POST /api/assets` - Criar novo ativo
-- `PUT /api/assets/{id}/price` - Atualizar preço
-
-#### Portfolios Controller
-- `GET /api/portfolios` - Listar portfólios do usuário
-- `POST /api/portfolios` - Criar novo portfólio
-- `GET /api/portfolios/{id}` - Detalhes do portfólio
-- `POST /api/portfolios/{id}/positions` - Adicionar posição
-- `PUT /api/portfolios/{id}/positions/{positionId}` - Atualizar posição
-- `DELETE /api/portfolios/{id}/positions/{positionId}` - Remover posição
-
-#### Analytics Controller
-- `GET /api/portfolios/{id}/performance` - Performance do portfólio
-- `GET /api/portfolios/{id}/risk-analysis` - Análise de risco
-- `GET /api/portfolios/{id}/rebalancing` - Sugestão de rebalanceamento
-
----
-
-## 📋 Regras de Negócio
-
-### 1. Cálculos de Performance
-*Métricas para avaliar como o investimento está performando ao longo do tempo.*
-
-**Requisitos:**
-- **Retorno Total**: Percentual de ganho/perda desde o investimento inicial. Ex: investiu R$ 1000, hoje vale R$ 1200 = 20% de retorno
-- **Retorno Anualizado**: Retorno convertido para base anual, considerando o tempo de investimento. Permite comparar investimentos de períodos diferentes
-- **Volatilidade**: Mede o quanto o preço do ativo varia (risco). Alto desvio padrão = mais volátil = mais arriscado
-- Todos os cálculos devem tratar casos extremos (divisão por zero, dados insuficientes)
-
-### 2. Sistema de Rebalanceamento
-*Processo de ajustar o portfólio para manter a estratégia de investimento planejada.*
-
-**Requisitos:**
-- **Alocação Ideal**: Estratégia definida pelo investidor (ex: 30% em bancos, 20% em mineração)
-- **Peso Atual**: Percentual real de cada ativo no portfólio hoje (pode ter mudado com oscilações de preço)
-- **Transações Sugeridas**: Compras/vendas para voltar à alocação desejada
-- Minimizar o **número de transações** (menos custos e complexidade)
-- Considerar **custos de transação** de 0.3% por operação
-- Não sugerir transações menores que R$ 100,00 (não compensa os custos)
-
-### 3. Análise de Risco e Diversificação
-*Métricas para avaliar o nível de risco do portfólio e sua diversificação.*
-
-**Requisitos:**
-- **Sharpe Ratio**: Mede retorno ajustado ao risco. Quanto maior, melhor (mais retorno por unidade de risco)
-- **Taxa Selic**: Taxa básica de juros do Brasil, usada como referência de investimento "sem risco"
-- **Concentração por Setor**: Evita ter muito dinheiro em um setor só (ex: só bancos = risco se setor financeiro quebrar)
-- **Risco de Concentração**: Percentual do maior ativo individual (evita "colocar todos os ovos numa cesta")
-- **Correlação entre Ativos**: Ativos do mesmo setor tendem a subir/descer juntos, reduzindo diversificação
-
----
-
-## 📊 Guia de Utilização dos Dados
-
-### 📁 Arquivo SeedData.json
-O arquivo `SeedData.json` é sua **fonte única de dados** para o teste. Ele contém:
-
-#### 🏢 **Assets (15 ativos)**
-```json
-{
-  "symbol": "PETR4",
-  "name": "Petrobras PN", 
-  "type": "Stock",
-  "sector": "Energy",
-  "currentPrice": 35.50
-}
-```
-- **15 ativos** reais da bolsa brasileira
-- **10 setores** diversificados (Energy, Financial, Mining, etc.)
-- Preços atualizados para outubro/2024
-
-#### 💼 **Portfolios (3 perfis)**
-```json
-{
-  "name": "Portfólio Conservador",
-  "userId": "user-001",
-  "totalInvestment": 100000.00,
-  "positions": [...]
-}
-```
-- **Conservador**: Foco em dividendos e baixo risco
-- **Crescimento**: Ações de tecnologia e varejo
-- **Dividendos**: Empresas maduras com boa distribuição
-
-#### 📈 **Price History (30 dias)**
-- Histórico completo para **5 ativos principais**
-- Dados diários de setembro-outubro/2024
-- Base para cálculos de volatilidade e retorno
-
-#### 🏛️ **Market Data**
-- Taxa Selic: 12% a.a.
-- Performance do Ibovespa
-- Métricas por setor
-
----
-
-### 🔧 Como Implementar
-
-#### 1. **Relacionamentos Importantes**
-- Um Portfolio tem múltiplas Positions
-- Uma Position referencia um Asset (por Symbol)
-- PriceHistory vinculado ao Asset
-- Calcule valores atuais usando CurrentPrice
-
----
-
-### 🚨 Pontos de Atenção
-
-#### **Não Hardcode Dados**
-- Carregue todos os dados do `SeedData.json` na inicialização
-- Use variáveis e constantes em vez de valores fixos
-
-#### **Mantenha Consistência**
-- Use `Symbol` como chave para relacionar Position ↔ Asset
-- `CurrentPrice` do Asset vs `AveragePrice` da Position
-- Datas no formato ISO 8601 (yyyy-MM-dd)
-
-#### **Trate Edge Cases**
-- E se não houver histórico de preços?
-- E se a alocação target não somar 100%?
-- E se o preço atual for zero?
+❌ CRUD de Assets e Portfolios (dados já estão no seed)  
+❌ Autenticação/Autorização  
+❌ Banco de dados persistente  
+❌ Atualização de preços  
+❌ Sistema de alertas  
 
 ---
 
 ## 🚀 Como Entregar
 
-### 1. Submissão do Código
-- Disponibilize o código em um repositório Git(Github, Gitlab...).
-- Envie o link do repositório para avaliação.
+### 1. Submissão
+- Repositório Git (GitHub/GitLab) público ou privado com acesso
+- Branch `main` com código final
 
-### 2. Estrutura Mínima Esperada
-- Controllers com todos os endpoints especificados
-- Services com lógica de negócio e cálculos financeiros
-- Models/Entities modeladas adequadamente
-- DbContext configurado (In-Memory DB)
-- Startup/Program.cs com DI configurada
-- **Seed automático** do `SeedData.json` na inicialização
+### 2. Estrutura Obrigatória
+```
+📁 Projeto/
+├── README.md                    # Instruções de execução
+├── SeedData.json               # Dados fornecidos (não modificar)
+├── Controllers/                # AnalyticsController
+├── Services/                   # Lógica dos algoritmos
+├── Models/                     # Entidades e DTOs
+├── Tests/                      # Mínimo 5 testes unitários
+└── Program.cs                  # Seed automático
+```
 
-### 3. Documentação
-- README com instruções de execução
-- Comentários no código explicando algoritmos financeiros
-- Documentação dos endpoints
+### 3. README do Projeto
+Deve conter:
+- Como executar (`dotnet run`)
+- Como testar (`dotnet test`)
+- Decisões técnicas importantes
+- Fórmulas financeiras utilizadas
+- Premissas adotadas
 
-### 4. Testes Obrigatórios
-- Testes unitários dos cálculos financeiros críticos
-- Validação usando cenários do `SeedData.json`
+### 4. Testes Obrigatórios (Mínimo 5)
+- ✅ Cálculo de retorno total
+- ✅ Cálculo de volatilidade com dados históricos
+- ✅ Sharpe ratio com diferentes cenários
+- ✅ Identificação de concentração de risco
+- ✅ Sugestão de rebalanceamento
 
 ---
 
-### ✅ **Entregas Obrigatórias**
-- [ ] CRUD completo de Assets e Portfolios
+## ✅ Checklist de Entrega
+
+### Obrigatório
+- [ ] AnalyticsController com 3 endpoints funcionais
+- [ ] Services com algoritmos financeiros implementados
 - [ ] Carregamento automático do SeedData.json
-- [ ] Cálculo de valor atual do portfólio
-- [ ] Cálculo de retorno total e percentual
-- [ ] Algoritmo básico de rebalanceamento
-- [ ] 3 testes unitários dos cálculos críticos
-- [ ] Endpoints funcionais com validação básica
+- [ ] 5 testes unitários passando
+- [ ] Tratamento de edge cases (divisão por zero, dados faltantes)
+- [ ] Documentação básica no README
+- [ ] Código compilando e rodando com `dotnet run`
 
-### 🚀 **Diferencial**
-- [ ] Cálculo de volatilidade com histórico
-- [ ] Sharpe ratio completo
-- [ ] Análise de concentração por setor
-- [ ] Sistema de alertas
-- [ ] Documentação Swagger completa
+### Diferencial
+- [ ] Swagger/OpenAPI configurado
+- [ ] Logs estruturados para debug dos cálculos
+- [ ] Validação robusta de inputs
 - [ ] Testes de integração
+- [ ] Algoritmo de otimização de rebalanceamento avançado
+- [ ] Comentários explicando fórmulas financeiras
 
 ---
 
-## 💡 Dicas
+## 💡 Critérios de Avaliação
 
-1. **Comece pelo básico**: CRUD primeiro, otimizações depois
-2. **Use InMemory Database**: Mais rápido para desenvolvimento  
-3. **Priorize algoritmos**: Cálculos valem mais pontos que endpoints
-4. **Valide o essencial**: Preços negativos, quantidades inválidas
-5. **Documente decisões**: Explique fórmulas financeiras usadas
-6. **Teste frequentemente**: Valide cada cálculo implementado
-7. **Atenção**: Funcional > perfeito
+| Critério | Peso | O Que Avaliamos |
+|----------|------|-----------------|
+| **Algoritmos** | 40% | Correção dos cálculos, tratamento de edge cases |
+| **Qualidade de Código** | 30% | Clean Code, SOLID, organização |
+| **Testes** | 20% | Cobertura, cenários testados |
+| **Documentação** | 10% | Clareza, decisões técnicas |
+
+---
+
+## 🎓 Dicas
+
+1. **Comece pelo Performance**: É o mais direto
+2. **Use classes helpers**: `FinancialCalculator`, `MathHelper`
+3. **Isole a lógica**: Services devem ser testáveis sem controllers
+4. **Valide os dados**: O seed pode ter inconsistências propositais
+5. **Documente fórmulas**: Explique cada cálculo financeiro
+6. **Teste com os 3 portfólios**: Cada um tem características diferentes
+
+---
+
+## 📊 Dados de Teste
+
+Use os 3 portfólios do SeedData.json:
+
+1. **Portfólio Conservador** (user-001)
+   - Foco em dividendos
+   - Baixa volatilidade esperada
+   - Boa diversificação
+
+2. **Portfólio Crescimento** (user-002)
+   - Ações de tecnologia e varejo
+   - Alta volatilidade
+   - Concentrado em poucos setores
+
+3. **Portfólio Dividendos** (user-003)
+   - Empresas maduras
+   - Médio risco
+   - Precisa rebalanceamento
+
+---
+
+## ❓ FAQ
+
+**P: Posso usar bibliotecas externas para cálculos?**  
+R: Sim, mas dê preferência a implementar os algoritmos (é o que avaliaremos).
+
+**P: E se não houver histórico de preços?**  
+R: Retorne `null` para volatilidade e documente a decisão.
+
+**P: Preciso validar se o portfólio existe?**  
+R: Sim, retorne 404 se não existir.
+
+**P: O que fazer se TargetAllocation não somar 100%?**  
+R: Documente sua decisão (normalizar, rejeitar ou aceitar).
+
+---
+
+**Boa sorte! 🚀**
